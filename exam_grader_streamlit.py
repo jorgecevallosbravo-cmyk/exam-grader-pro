@@ -217,7 +217,7 @@ def main():
                         
                         st.markdown("---")
                         
-                        # Detailed comparison - centered title
+                        # Detailed comparison - centered title and centered table
                         st.markdown("<h3 style='text-align: center; margin-bottom: 16px;'>Detailed Comparison</h3>", unsafe_allow_html=True)
                         
                         # Create DataFrame
@@ -228,13 +228,17 @@ def main():
                         comparison_df['Student'] = comparison_df['student']
                         comparison_df['✓/✗'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
                         
-                        # Display table centered
-                        st.dataframe(
-                            comparison_df[['Q', 'Key', 'Student', '✓/✗']],
-                            use_container_width=True,
-                            hide_index=True,
-                            height=300
-                        )
+                        # Center the table using columns with padding
+                        col_left, col_table, col_right = st.columns([0.5, 2, 0.5])
+                        
+                        with col_table:
+                            # Display table centered
+                            st.dataframe(
+                                comparison_df[['Q', 'Key', 'Student', '✓/✗']],
+                                use_container_width=True,
+                                hide_index=True,
+                                height=300
+                            )
         else:
             # Placeholder
             st.info("👈 Enter data and click Calculate to see grade here")
