@@ -221,86 +221,21 @@ Examples:
                     st.markdown("---")
                     st.subheader("Detailed Comparison")
                     
-                    # Create comparison table
-                    comparison_html = """
-                    <style>
-                        .comparison-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-top: 16px;
-                            background: white;
-                            border-radius: 6px;
-                            overflow: hidden;
-                        }
-                        .comparison-table thead {
-                            background: #f0f2f5;
-                        }
-                        .comparison-table th {
-                            padding: 12px 16px;
-                            text-align: center;
-                            font-size: 13px;
-                            font-weight: 600;
-                            color: #6b6b76;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            border-bottom: 2px solid #e6e6ea;
-                        }
-                        .comparison-table td {
-                            padding: 12px 16px;
-                            text-align: center;
-                            border-bottom: 1px solid #f0f2f5;
-                            font-family: 'Courier New', monospace;
-                            font-size: 14px;
-                        }
-                        .comparison-table tbody tr:hover {
-                            background: #f9fafb;
-                        }
-                        .result-correct {
-                            background: #c6f6d5;
-                            color: #22543d;
-                            font-weight: 700;
-                            padding: 4px 12px;
-                            border-radius: 4px;
-                        }
-                        .result-incorrect {
-                            background: #fed7d7;
-                            color: #742a2a;
-                            font-weight: 700;
-                            padding: 4px 12px;
-                            border-radius: 4px;
-                        }
-                    </style>
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Answer Key</th>
-                                <th>Student</th>
-                                <th>Result</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                    """
+                    # Create DataFrame for comparison table
+                    import pandas as pd
                     
-                    for item in comparison:
-                        result_class = "result-correct" if item['correct'] else "result-incorrect"
-                        result_symbol = "✓" if item['correct'] else "✗"
-                        
-                        comparison_html += f"""
-                            <tr>
-                                <td>{item['question']}</td>
-                                <td><strong>{item['key']}</strong></td>
-                                <td><strong>{item['student']}</strong></td>
-                                <td><span class="{result_class}">{result_symbol}</span></td>
-                            </tr>
-                        """
+                    comparison_df = pd.DataFrame(comparison)
+                    comparison_df['Question'] = comparison_df['question']
+                    comparison_df['Answer Key'] = comparison_df['key']
+                    comparison_df['Student'] = comparison_df['student']
+                    comparison_df['Result'] = comparison_df['correct'].apply(lambda x: '✓ Correct' if x else '✗ Incorrect')
                     
-                    comparison_html += """
-                        </tbody>
-                    </table>
-                    """
-                    
-                    st.markdown(comparison_html, unsafe_allow_html=True)
+                    # Display table
+                    st.dataframe(
+                        comparison_df[['Question', 'Answer Key', 'Student', 'Result']],
+                        use_container_width=True,
+                        hide_index=True
+                    )
                     
                     # Copy grade button
                     st.markdown("---")
