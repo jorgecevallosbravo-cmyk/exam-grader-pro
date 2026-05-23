@@ -165,39 +165,57 @@ def main():
                         # GRADE - BIG AND PROMINENT AT TOP
                         st.markdown(f"""
                         <div style="background: linear-gradient(135deg, #4299e1 0%, #667eea 100%); 
-                                    padding: 24px; 
-                                    border-radius: 8px; 
+                                    padding: 32px; 
+                                    border-radius: 12px; 
                                     text-align: center; 
                                     color: white;
-                                    margin-bottom: 16px;">
-                            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">
+                                    margin-bottom: 20px;
+                                    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);">
+                            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; margin-bottom: 12px;">
                                 FINAL GRADE
                             </div>
-                            <div style="font-size: 56px; font-weight: 700; letter-spacing: -1px; line-height: 1;">
+                            <div style="font-size: 64px; font-weight: 700; letter-spacing: -2px; line-height: 1;">
                                 {grade:.2f} / {grading_scale}
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Compact stats
-                        stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
-                        with stat_col1:
-                            st.metric("✓", correct, label_visibility="visible")
-                        with stat_col2:
-                            st.metric("✗", incorrect, label_visibility="visible")
-                        with stat_col3:
-                            st.metric("Total", total)
-                        with stat_col4:
-                            st.metric("%", f"{percentage:.1f}")
+                        # Compact stats - small and uniform
+                        st.markdown(f"""
+                        <div style="display: flex; justify-content: space-around; margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✓ CORRECT</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #10b981;">{correct}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✗ INCORRECT</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #ef4444;">{incorrect}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">TOTAL</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #374151;">{total}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">PERCENTAGE</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #374151;">{percentage:.1f}%</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        # Copy grade
-                        st.code(f"{grade:.2f} / {grading_scale}", language=None)
-                        st.caption("👆 Copy to LMS")
+                        # Copy grade - centered
+                        st.markdown(f"""
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="display: inline-block; background: #f3f4f6; padding: 10px 20px; border-radius: 6px; font-family: monospace; font-size: 16px; color: #1f2937; border: 1px solid #e5e7eb;">
+                                {grade:.2f} / {grading_scale}
+                            </div>
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 6px;">👆 Copy to LMS</div>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
                         st.markdown("---")
                         
-                        # Detailed comparison (scrollable)
-                        st.subheader("Detailed Comparison")
+                        # Detailed comparison - centered title
+                        st.markdown("<h3 style='text-align: center; margin-bottom: 16px;'>Detailed Comparison</h3>", unsafe_allow_html=True)
                         
                         # Create DataFrame
                         import pandas as pd
@@ -207,7 +225,7 @@ def main():
                         comparison_df['Student'] = comparison_df['student']
                         comparison_df['✓/✗'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
                         
-                        # Display table with fixed height
+                        # Display table centered
                         st.dataframe(
                             comparison_df[['Q', 'Key', 'Student', '✓/✗']],
                             use_container_width=True,
@@ -218,9 +236,14 @@ def main():
             # Placeholder
             st.info("👈 Enter data and click Calculate to see grade here")
     
-    # Compact footer
+    # Compact footer - centered
     st.markdown("---")
-    st.caption("**Smart Format Detection** • Created by Jorge B. Cevallos")
+    st.markdown("""
+    <div style="text-align: center; color: #6b7280; font-size: 13px; padding: 16px 0;">
+        <div style="margin-bottom: 8px;"><strong>Smart Format Detection</strong></div>
+        <div>Created by <strong style="color: #374151;">Jorge B. Cevallos</strong></div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
