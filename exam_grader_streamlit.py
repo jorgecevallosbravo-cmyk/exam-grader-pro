@@ -16,7 +16,7 @@ from datetime import datetime
 st.set_page_config(
     page_title="Exam Grader Pro",
     page_icon="✓",
-    layout="centered"
+    layout="wide"  # Use full screen width
 )
 
 # ============================================================================
@@ -77,91 +77,66 @@ def grade_exam(answer_key, student_answer, grading_scale):
 # ============================================================================
 
 def main():
-    # Header
-    st.title("✓ Exam Grader Pro")
-    st.markdown("Generate accurate grades from multiple-choice exams with intelligent answer parsing")
+    # Compact header
+    col_title1, col_title2 = st.columns([3, 1])
+    with col_title1:
+        st.title("✓ Exam Grader Pro")
+        st.caption("Generate accurate grades from multiple-choice exams with intelligent answer parsing")
     
-    # Instructions expander (keep at top)
-    with st.expander("📖 How to use this tool"):
-        st.markdown("""
-        1. **Select your grading scale** (10-point, 100-point, or custom)
-        2. **Enter the answer key** as a string of letters (e.g., ADCABCBA...)
-        3. **Paste the student's answer** in any format:
-           - Plain letters: `ABCDABCD...`
-           - Numbered: `1) A, 2) B, 3) C...`
-           - Punctuated: `A, B, C, D...`
-        4. **Click 'Calculate Grade'** to see results
-        5. **Copy the grade** to paste into your LMS (Moodle, Canvas, etc.)
-        
-        **The app automatically extracts only the letters, so students can format their answers however they want!**
-        """)
+    with col_title2:
+        # Instructions expander in top right
+        with st.expander("📖 How to use"):
+            st.markdown("""
+            1. Select grading scale
+            2. Enter answer key
+            3. Paste student's answer
+            4. Click Calculate Grade
+            
+            **Accepts any format!**
+            """)
     
     st.markdown("---")
     
-    # Create two-column layout
-    left_col, right_col = st.columns([1, 1.5])
+    # Create two-column layout with equal width
+    left_col, right_col = st.columns([1, 1])
     
     with left_col:
-        st.subheader("Configuration")
-        
-        # Grading scale selector
+        # Configuration (compact)
         scale_option = st.selectbox(
             "⚙️ Grading Scale",
-            ["10-point scale", "100-point scale", "20-point scale", "5-point scale", "Custom"],
-            help="Select the grading scale for your institution"
+            ["10-point scale", "100-point scale", "20-point scale", "5-point scale", "Custom"]
         )
         
         if scale_option == "Custom":
-            custom_scale = st.number_input(
-                "Custom Scale",
-                min_value=1,
-                max_value=1000,
-                value=10,
-                step=1,
-                help="Enter your custom grading scale"
-            )
-            grading_scale = custom_scale
+            grading_scale = st.number_input("Custom Scale", min_value=1, max_value=1000, value=10, step=1)
         else:
             grading_scale = int(scale_option.split('-')[0])
         
-        st.markdown("---")
-        
-        # Step 1: Answer Key
-        st.subheader("Step 1: Answer Key")
-        
+        # Answer Key (compact)
         answer_key = st.text_area(
             "🔑 Answer Key",
-            height=80,
-            placeholder="e.g., ADCABCBADCBA...",
-            help="Enter the correct answers as a string of letters",
+            height=60,
+            placeholder="ADCABCBADCBA...",
             key="answer_key"
         )
         
-        st.markdown("---")
-        
-        # Step 2: Student Answer
-        st.subheader("Step 2: Student's Answer")
-        
+        # Student Answer (compact)
         student_answer = st.text_area(
             "📝 Student's Answer",
-            height=150,
-            placeholder="Paste student's answer in any format...\n\nExamples:\n• ABCDABCD...\n• 1) A, 2) B, 3) C...\n• A, B, C, D...",
-            help="Paste the student's answer string in any format",
+            height=120,
+            placeholder="Paste answer in any format",
             key="student_answer"
         )
         
-        # Buttons
-        st.markdown("---")
+        # Buttons (compact)
         col1, col2 = st.columns(2)
-        
         with col1:
-            calculate_button = st.button("🚀 Calculate Grade", type="primary", use_container_width=True)
-        
+            calculate_button = st.button("🚀 Calculate", type="primary", use_container_width=True)
         with col2:
-            if st.button("Clear All", use_container_width=True):
+            if st.button("Clear", use_container_width=True):
                 st.rerun()
     
-    # Right column - Results
+    # Right column - Results (always starts at top)
     with right_col:
         # Process grading
         if calculate_button:
@@ -173,13 +148,13 @@ def main():
                 student_letters = extract_letters(student_answer)
                 
                 if not key_letters:
-                    st.error("❌ Could not extract valid letters from answer key. Please check your input.")
+                    st.error("❌ Could not extract valid letters from answer key.")
                 elif not student_letters:
-                    st.error("❌ Could not extract valid letters from student answer. Please check your input.")
+                    st.error("❌ Could not extract valid letters from student answer.")
                 else:
                     # Check for length mismatch
                     if len(key_letters) != len(student_letters):
-                        st.warning(f"⚠️ **Length Mismatch**\n\nAnswer Key: {len(key_letters)} questions\n\nStudent Answer: {len(student_letters)} questions\n\nGrading will proceed based on the shorter length.")
+                        st.warning(f"⚠️ Length mismatch: Key={len(key_letters)}, Student={len(student_letters)}")
                     
                     # Calculate grade
                     grade, correct, incorrect, total, percentage, comparison = grade_exam(
@@ -187,78 +162,65 @@ def main():
                     )
                     
                     if grade is not None:
-                        st.success("✅ Grading complete!")
-                        
-                        # Display final grade in a prominent card
+                        # GRADE - BIG AND PROMINENT AT TOP
                         st.markdown(f"""
                         <div style="background: linear-gradient(135deg, #4299e1 0%, #667eea 100%); 
-                                    padding: 30px; 
+                                    padding: 24px; 
                                     border-radius: 8px; 
                                     text-align: center; 
                                     color: white;
-                                    margin-bottom: 20px;">
-                            <div style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 10px;">
+                                    margin-bottom: 16px;">
+                            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">
                                 FINAL GRADE
                             </div>
-                            <div style="font-size: 48px; font-weight: 700; letter-spacing: -1px;">
+                            <div style="font-size: 56px; font-weight: 700; letter-spacing: -1px; line-height: 1;">
                                 {grade:.2f} / {grading_scale}
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Statistics in compact grid
-                        stat_col1, stat_col2 = st.columns(2)
+                        # Compact stats
+                        stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
                         with stat_col1:
-                            st.metric("✓ Correct", correct)
-                            st.metric("Total", total)
+                            st.metric("✓", correct, label_visibility="visible")
                         with stat_col2:
-                            st.metric("✗ Incorrect", incorrect)
-                            st.metric("Percentage", f"{percentage:.2f}%")
+                            st.metric("✗", incorrect, label_visibility="visible")
+                        with stat_col3:
+                            st.metric("Total", total)
+                        with stat_col4:
+                            st.metric("%", f"{percentage:.1f}")
                         
                         # Copy grade
-                        grade_text = f"{grade:.2f} / {grading_scale}"
-                        st.code(grade_text, language=None)
-                        st.caption("👆 Copy this grade to paste into your LMS")
+                        st.code(f"{grade:.2f} / {grading_scale}", language=None)
+                        st.caption("👆 Copy to LMS")
                         
                         st.markdown("---")
                         
-                        # Detailed comparison
+                        # Detailed comparison (scrollable)
                         st.subheader("Detailed Comparison")
                         
-                        # Create DataFrame for comparison table
+                        # Create DataFrame
                         import pandas as pd
-                        
                         comparison_df = pd.DataFrame(comparison)
-                        comparison_df['Question'] = comparison_df['question']
+                        comparison_df['Q'] = comparison_df['question']
                         comparison_df['Key'] = comparison_df['key']
                         comparison_df['Student'] = comparison_df['student']
-                        comparison_df['Result'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
+                        comparison_df['✓/✗'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
                         
-                        # Display table with color coding
+                        # Display table with fixed height
                         st.dataframe(
-                            comparison_df[['Question', 'Key', 'Student', 'Result']],
+                            comparison_df[['Q', 'Key', 'Student', '✓/✗']],
                             use_container_width=True,
                             hide_index=True,
-                            height=400
+                            height=300
                         )
         else:
-            # Show placeholder when no results yet
-            st.info("👈 Enter answer key and student's answer, then click 'Calculate Grade' to see results here.")
+            # Placeholder
+            st.info("👈 Enter data and click Calculate to see grade here")
     
-    # Footer at bottom
+    # Compact footer
     st.markdown("---")
-    st.markdown("""
-    **Smart Format Detection:** The app automatically extracts answers from any format—plain letters, 
-    numbered lists, or punctuated sequences. Students can submit however they're comfortable.
-    """)
-    
-    st.markdown("---")
-    st.markdown(
-        "<p style='text-align: center; color: #6b6b76; font-size: 0.9em;'>"
-        "Exam Grader Pro | Created by <strong>Jorge B. Cevallos</strong>"
-        "</p>",
-        unsafe_allow_html=True
-    )
+    st.caption("**Smart Format Detection** • Created by Jorge B. Cevallos")
 
 
 if __name__ == "__main__":
