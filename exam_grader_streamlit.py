@@ -138,8 +138,8 @@ def main():
     
     # Right column - Results (always starts at top)
     with right_col:
-        # Add same vertical spacing as left column's grading scale to align
-        st.markdown("<div style='height: 68px;'></div>", unsafe_allow_html=True)
+        # Add minimal spacing to align with grading scale label
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         
         # Process grading
         if calculate_button:
