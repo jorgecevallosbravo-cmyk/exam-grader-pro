@@ -205,13 +205,15 @@ def main():
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Copy grade - with built-in copy button
-                        st.code(f"{grade:.2f}", language=None)
-                        st.markdown("<p style='text-align: center; font-size: 11px; color: #6b7280; margin-top: -8px;'>👆 Copy to LMS</p>", unsafe_allow_html=True)
+                        # Copy grade - compact and centered
+                        col_left_copy, col_copy, col_right_copy = st.columns([1, 1, 1])
+                        with col_copy:
+                            st.code(f"{grade:.2f}", language=None)
+                            st.markdown("<p style='text-align: center; font-size: 11px; color: #6b7280; margin-top: -8px;'>👆 Copy to LMS</p>", unsafe_allow_html=True)
                         
-                        st.markdown("---")
+                        st.markdown("<div style='margin: 24px 0;'></div>", unsafe_allow_html=True)
                         
-                        # Detailed comparison - centered title and centered table
+                        # Detailed comparison - centered title and centered table (NO LINE ABOVE)
                         st.markdown("<h3 style='text-align: center; margin-bottom: 16px;'>Detailed Comparison</h3>", unsafe_allow_html=True)
                         
                         # Create DataFrame
