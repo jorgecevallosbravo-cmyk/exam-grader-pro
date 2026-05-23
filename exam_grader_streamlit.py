@@ -138,6 +138,9 @@ def main():
     
     # Right column - Results (always starts at top)
     with right_col:
+        # Add same vertical spacing as left column's grading scale to align
+        st.markdown("<div style='height: 68px;'></div>", unsafe_allow_html=True)
+        
         # Process grading
         if calculate_button:
             if not answer_key or not student_answer:
@@ -202,11 +205,11 @@ def main():
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Copy grade - centered
+                        # Copy grade - centered - ONLY THE NUMERIC VALUE
                         st.markdown(f"""
                         <div style="text-align: center; margin-bottom: 24px;">
                             <div style="display: inline-block; background: #f3f4f6; padding: 10px 20px; border-radius: 6px; font-family: monospace; font-size: 16px; color: #1f2937; border: 1px solid #e5e7eb;">
-                                {grade:.2f} / {grading_scale}
+                                {grade:.2f}
                             </div>
                             <div style="font-size: 11px; color: #6b7280; margin-top: 6px;">👆 Copy to LMS</div>
                         </div>
