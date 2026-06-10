@@ -20,6 +20,31 @@ st.set_page_config(
 )
 
 # ============================================================================
+# PASSWORD GATE
+# ============================================================================
+
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    st.markdown("## ✓ Exam Grader Pro")
+    st.markdown("---")
+    pwd = st.text_input("Password", type="password", placeholder="Enter password")
+    if st.button("Login", type="primary"):
+        if pwd.lower() == "portafolio":
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+    return False
+
+if not check_password():
+    st.stop()
+
+# ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
