@@ -130,7 +130,9 @@ def grade_batch_student(key_letters, student_letters, grading_scale):
     """Grade one student against the key. Returns result dict."""
     n = len(key_letters)
     obs_flag = None
-    if len(student_letters) > n:
+    if not student_letters:
+        obs_flag = "Sin intento"
+    elif len(student_letters) > n:
         obs_flag = f"{len(student_letters)} caracteres enviados; se calificaron los primeros {n}"
         student_letters = student_letters[:n]
     correct   = sum(1 for i in range(n)
