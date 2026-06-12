@@ -239,145 +239,144 @@ def main():
     # ── TAB 1: existing single-grader ────────────────────────────────────────
     with tab1:
         left_col, right_col = st.columns([1, 1])
-    
-    with left_col:
-        # Configuration (compact)
-        scale_option = st.selectbox(
-            "⚙️ Grading Scale",
-            ["10-point scale", "100-point scale", "20-point scale", "5-point scale", "Custom"]
-        )
-        
-        if scale_option == "Custom":
-            grading_scale = st.number_input("Custom Scale", min_value=1, max_value=1000, value=10, step=1)
-        else:
-            grading_scale = int(scale_option.split('-')[0])
-        
-        # Answer Key (compact)
-        answer_key = st.text_area(
-            "🔑 Answer Key",
-            height=60,
-            placeholder="ADCABCBADCBA...",
-            key="answer_key"
-        )
-        
-        # Student Answer (compact)
-        student_answer = st.text_area(
-            "📝 Student's Answer",
-            height=120,
-            placeholder="Paste answer in any format",
-            key="student_answer"
-        )
-        
-        # Buttons (compact)
-        col1, col2 = st.columns(2)
-        with col1:
-            calculate_button = st.button("🚀 Calculate", type="primary", use_container_width=True)
-        with col2:
-            if st.button("Clear", use_container_width=True):
-                st.rerun()
-    
-    # Right column - Results (always starts at top)
-    with right_col:
-        # Add minimal spacing to align with grading scale label
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        
-        # Process grading
-        if calculate_button:
-            if not answer_key or not student_answer:
-                st.error("❌ Please enter both answer key and student answer.")
+
+        with left_col:
+            # Configuration (compact)
+            scale_option = st.selectbox(
+                "⚙️ Grading Scale",
+                ["10-point scale", "100-point scale", "20-point scale", "5-point scale", "Custom"]
+            )
+            
+            if scale_option == "Custom":
+                grading_scale = st.number_input("Custom Scale", min_value=1, max_value=1000, value=10, step=1)
             else:
-                # Extract letters for validation
-                key_letters = extract_letters(answer_key)
-                student_letters = extract_letters(student_answer)
-                
-                if not key_letters:
-                    st.error("❌ Could not extract valid letters from answer key.")
-                elif not student_letters:
-                    st.error("❌ Could not extract valid letters from student answer.")
+                grading_scale = int(scale_option.split('-')[0])
+            
+            # Answer Key (compact)
+            answer_key = st.text_area(
+                "🔑 Answer Key",
+                height=60,
+                placeholder="ADCABCBADCBA...",
+                key="answer_key"
+            )
+            
+            # Student Answer (compact)
+            student_answer = st.text_area(
+                "📝 Student's Answer",
+                height=120,
+                placeholder="Paste answer in any format",
+                key="student_answer"
+            )
+            
+            # Buttons (compact)
+            col1, col2 = st.columns(2)
+            with col1:
+                calculate_button = st.button("🚀 Calculate", type="primary", use_container_width=True)
+            with col2:
+                if st.button("Clear", use_container_width=True):
+                    st.rerun()
+
+        # Right column - Results (always starts at top)
+        with right_col:
+            # Add minimal spacing to align with grading scale label
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            
+            # Process grading
+            if calculate_button:
+                if not answer_key or not student_answer:
+                    st.error("❌ Please enter both answer key and student answer.")
                 else:
-                    # Check for length mismatch
-                    if len(key_letters) != len(student_letters):
-                        st.warning(f"⚠️ Length mismatch: Key={len(key_letters)}, Student={len(student_letters)}")
+                    # Extract letters for validation
+                    key_letters = extract_letters(answer_key)
+                    student_letters = extract_letters(student_answer)
                     
-                    # Calculate grade
-                    grade, correct, incorrect, total, percentage, comparison = grade_exam(
-                        answer_key, student_answer, grading_scale
-                    )
-                    
-                    if grade is not None:
-                        # GRADE - BIG AND PROMINENT AT TOP
-                        st.markdown(f"""
-                        <div style="background: linear-gradient(135deg, #4299e1 0%, #667eea 100%); 
-                                    padding: 32px; 
-                                    border-radius: 12px; 
-                                    text-align: center; 
-                                    color: white;
-                                    margin-bottom: 20px;
-                                    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);">
-                            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; margin-bottom: 12px;">
-                                FINAL GRADE
+                    if not key_letters:
+                        st.error("❌ Could not extract valid letters from answer key.")
+                    elif not student_letters:
+                        st.error("❌ Could not extract valid letters from student answer.")
+                    else:
+                        # Check for length mismatch
+                        if len(key_letters) != len(student_letters):
+                            st.warning(f"⚠️ Length mismatch: Key={len(key_letters)}, Student={len(student_letters)}")
+                        
+                        # Calculate grade
+                        grade, correct, incorrect, total, percentage, comparison = grade_exam(
+                            answer_key, student_answer, grading_scale
+                        )
+                        
+                        if grade is not None:
+                            # GRADE - BIG AND PROMINENT AT TOP
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, #4299e1 0%, #667eea 100%); 
+                                        padding: 32px; 
+                                        border-radius: 12px; 
+                                        text-align: center; 
+                                        color: white;
+                                        margin-bottom: 20px;
+                                        box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);">
+                                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; margin-bottom: 12px;">
+                                    FINAL GRADE
+                                </div>
+                                <div style="font-size: 64px; font-weight: 700; letter-spacing: -2px; line-height: 1;">
+                                    {grade:.2f} / {grading_scale}
+                                </div>
                             </div>
-                            <div style="font-size: 64px; font-weight: 700; letter-spacing: -2px; line-height: 1;">
-                                {grade:.2f} / {grading_scale}
+                            """, unsafe_allow_html=True)
+                            
+                            # Compact stats - small and uniform
+                            st.markdown(f"""
+                            <div style="display: flex; justify-content: space-around; margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✓ CORRECT</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #10b981;">{correct}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✗ INCORRECT</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #ef4444;">{incorrect}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">TOTAL</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #374151;">{total}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">PERCENTAGE</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #374151;">{percentage:.1f}%</div>
+                                </div>
                             </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Compact stats - small and uniform
-                        st.markdown(f"""
-                        <div style="display: flex; justify-content: space-around; margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px;">
-                            <div style="text-align: center;">
-                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✓ CORRECT</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #10b981;">{correct}</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">✗ INCORRECT</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #ef4444;">{incorrect}</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">TOTAL</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #374151;">{total}</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">PERCENTAGE</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #374151;">{percentage:.1f}%</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Copy grade - compact and centered
-                        col_left_copy, col_copy, col_right_copy = st.columns([1, 1, 1])
-                        with col_copy:
-                            st.code(f"{grade:.2f}", language=None)
-                            st.markdown("<p style='text-align: center; font-size: 11px; color: #6b7280; margin-top: -8px;'>👆 Copy to LMS</p>", unsafe_allow_html=True)
-                        
-                        st.markdown("<div style='margin: 24px 0;'></div>", unsafe_allow_html=True)
-                        
-                        # Detailed comparison - centered title and centered table (NO LINE ABOVE)
-                        st.markdown("<h3 style='text-align: center; margin-bottom: 16px;'>Detailed Comparison</h3>", unsafe_allow_html=True)
-                        
-                        # Create DataFrame
-                        import pandas as pd
-                        comparison_df = pd.DataFrame(comparison)
-                        comparison_df['Q'] = comparison_df['question']
-                        comparison_df['Key'] = comparison_df['key']
-                        comparison_df['Student'] = comparison_df['student']
-                        comparison_df['✓/✗'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
-                        
-                        # Center the table using columns with padding
-                        col_left, col_table, col_right = st.columns([0.5, 2, 0.5])
-                        
-                        with col_table:
-                            # Display table centered
-                            st.dataframe(
-                                comparison_df[['Q', 'Key', 'Student', '✓/✗']],
-                                use_container_width=True,
-                                hide_index=True,
-                                height=300
-                            )
-        else:
-            # Placeholder
-            st.info("👈 Enter data and click Calculate to see grade here")
+                            """, unsafe_allow_html=True)
+                            
+                            # Copy grade - compact and centered
+                            col_left_copy, col_copy, col_right_copy = st.columns([1, 1, 1])
+                            with col_copy:
+                                st.code(f"{grade:.2f}", language=None)
+                                st.markdown("<p style='text-align: center; font-size: 11px; color: #6b7280; margin-top: -8px;'>👆 Copy to LMS</p>", unsafe_allow_html=True)
+                            
+                            st.markdown("<div style='margin: 24px 0;'></div>", unsafe_allow_html=True)
+                            
+                            # Detailed comparison - centered title and centered table (NO LINE ABOVE)
+                            st.markdown("<h3 style='text-align: center; margin-bottom: 16px;'>Detailed Comparison</h3>", unsafe_allow_html=True)
+                            
+                            # Create DataFrame
+                            comparison_df = pd.DataFrame(comparison)
+                            comparison_df['Q'] = comparison_df['question']
+                            comparison_df['Key'] = comparison_df['key']
+                            comparison_df['Student'] = comparison_df['student']
+                            comparison_df['✓/✗'] = comparison_df['correct'].apply(lambda x: '✓' if x else '✗')
+                            
+                            # Center the table using columns with padding
+                            col_left, col_table, col_right = st.columns([0.5, 2, 0.5])
+                            
+                            with col_table:
+                                # Display table centered
+                                st.dataframe(
+                                    comparison_df[['Q', 'Key', 'Student', '✓/✗']],
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    height=300
+                                )
+            else:
+                # Placeholder
+                st.info("👈 Enter data and click Calculate to see grade here")
 
     # ── TAB 2: batch mode ────────────────────────────────────────────────────
     with tab2:
