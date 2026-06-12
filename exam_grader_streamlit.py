@@ -7,7 +7,12 @@ Author: Jorge B. Cevallos
 
 import streamlit as st
 import re
+import io
+import pandas as pd
 from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 # ============================================================================
 # CONFIGURATION
@@ -98,32 +103,142 @@ def grade_exam(answer_key, student_answer, grading_scale):
 
 
 # ============================================================================
+# BATCH MODE HELPERS
+# ============================================================================
+
+def parse_batch_entry(raw_text):
+    """Parse a 2-line Moodle entry: line 1 = name (markdown or plain), line 2 = answers."""
+    lines = [l.strip() for l in raw_text.strip().splitlines() if l.strip()]
+    if len(lines) < 1:
+        return None, None
+    name_line  = lines[0]
+    answer_line = lines[1] if len(lines) >= 2 else ""
+    md_match = re.match(r'\[([^\]]+)\]', name_line)
+    name = md_match.group(1).strip().upper() if md_match else name_line.strip().upper()
+    answers = extract_letters(answer_line) if answer_line else ""
+    return name, answers
+
+
+def format_nota(value):
+    """Integer if whole, else 2-decimal with comma (e.g. 8 → '8', 9.67 → '9,67')."""
+    if value == int(value):
+        return str(int(value))
+    return f"{value:.2f}".replace(".", ",")
+
+
+def grade_batch_student(key_letters, student_letters, grading_scale):
+    """Grade one student against the key. Returns result dict."""
+    n = len(key_letters)
+    obs_flag = None
+    if len(student_letters) > n:
+        obs_flag = f"{len(student_letters)} caracteres enviados; se calificaron los primeros {n}"
+        student_letters = student_letters[:n]
+    correct   = sum(1 for i in range(n)
+                    if i < len(student_letters) and student_letters[i] == key_letters[i])
+    wrong_pos = [i + 1 for i in range(n)
+                 if not (i < len(student_letters) and student_letters[i] == key_letters[i])]
+    grade = (correct / n * grading_scale) if n > 0 else 0
+    return {
+        "correct":        correct,
+        "total":          n,
+        "grade":          grade,
+        "nota":           format_nota(grade),
+        "wrong_positions": wrong_pos,
+        "obs_flag":       obs_flag,
+    }
+
+
+def build_batch_excel(entries, key_length, grading_scale):
+    """Build Excel workbook from batch entries list. Returns bytes."""
+    sorted_entries = sorted(entries, key=lambda x: x["name"])
+
+    # Detect duplicate answer strings
+    answer_map = {}
+    for e in sorted_entries:
+        answer_map.setdefault(e["answers"], []).append(e["name"])
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Calificaciones"
+
+    hdr_font  = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    hdr_fill  = PatternFill("solid", start_color="2F4F7F")
+    hdr_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    yellow    = PatternFill("solid", start_color="FFFF00")
+    red_f     = PatternFill("solid", start_color="FF6B6B")
+    alt       = PatternFill("solid", start_color="F2F2F2")
+    no_fill   = PatternFill(fill_type=None)
+    center_a  = Alignment(horizontal="center", vertical="center")
+    left_a    = Alignment(horizontal="left",   vertical="center", wrap_text=True)
+    thin      = Side(style="thin", color="CCCCCC")
+    bdr       = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers    = ["APELLIDOS Y NOMBRES", f"ACIERTOS/{key_length}", "NOTA", "OBSERVACIÓN"]
+    col_widths = [42, 14, 10, 65]
+
+    for col, (h, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font      = hdr_font
+        cell.fill      = hdr_fill
+        cell.alignment = hdr_align
+        cell.border    = bdr
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.row_dimensions[1].height = 30
+
+    for i, e in enumerate(sorted_entries, 2):
+        r = e["result"]
+        obs_parts = []
+        group = answer_map.get(e["answers"], [])
+        if len(group) > 1:
+            others = [n for n in group if n != e["name"]]
+            obs_parts.append("⚠ Idéntica: " + " / ".join(others))
+        if r["obs_flag"]:
+            obs_parts.append(r["obs_flag"])
+        obs     = " | ".join(obs_parts)
+        is_dup  = len(group) > 1
+        is_zero = r["grade"] == 0
+
+        row_data = [e["name"], r["correct"], r["nota"], obs]
+        for col, val in enumerate(row_data, 1):
+            cell = ws.cell(row=i, column=col, value=val)
+            cell.font      = Font(name="Arial", size=10)
+            cell.border    = bdr
+            cell.alignment = center_a if col in (2, 3) else left_a
+            cell.fill      = red_f if is_zero else (yellow if is_dup else (alt if i % 2 == 0 else no_fill))
+        ws.row_dimensions[i].height = 18
+
+    ws.freeze_panes = "A2"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+# ============================================================================
 # STREAMLIT APP
 # ============================================================================
 
 def main():
-    # Compact header
+    # Header
     col_title1, col_title2 = st.columns([3, 1])
     with col_title1:
         st.title("✓ Exam Grader Pro")
         st.caption("Generate accurate grades from multiple-choice exams with intelligent answer parsing")
-    
     with col_title2:
-        # Instructions expander in top right
         with st.expander("📖 How to use"):
             st.markdown("""
-            1. Select grading scale
-            2. Enter answer key
-            3. Paste student's answer
-            4. Click Calculate Grade
-            
-            **Accepts any format!**
+            **Single:** key + one student → instant grade.
+
+            **Batch:** set key, paste Moodle entries one by one, download Excel when done.
+            Each entry = name line + answers line (copy directly from Moodle).
             """)
-    
+
     st.markdown("---")
-    
-    # Create two-column layout with equal width
-    left_col, right_col = st.columns([1, 1])
+    tab1, tab2 = st.tabs(["📝 Single Grader", "📦 Batch Mode"])
+
+    # ── TAB 1: existing single-grader ────────────────────────────────────────
+    with tab1:
+        left_col, right_col = st.columns([1, 1])
     
     with left_col:
         # Configuration (compact)
@@ -263,8 +378,126 @@ def main():
         else:
             # Placeholder
             st.info("👈 Enter data and click Calculate to see grade here")
-    
-    # Compact footer - centered
+
+    # ── TAB 2: batch mode ────────────────────────────────────────────────────
+    with tab2:
+        st.markdown("### 📦 Batch Mode")
+        st.caption("Copy each student's Moodle block (name line + answers line) and add them one by one.")
+
+        # Config row
+        bc1, bc2, bc3 = st.columns([2, 1, 1])
+        with bc1:
+            batch_key = st.text_input(
+                "🔑 Answer Key",
+                key="batch_key",
+                placeholder="BCBABBBABCBCAAABCBCCACCCABACAB"
+            )
+        with bc2:
+            b_scale_opt = st.selectbox(
+                "⚙️ Scale",
+                ["10-point", "100-point", "20-point", "5-point", "Custom"],
+                key="b_scale_opt"
+            )
+            if b_scale_opt == "Custom":
+                b_scale = st.number_input("Custom", min_value=1, max_value=1000, value=10, key="b_scale_custom")
+            else:
+                b_scale = int(b_scale_opt.split("-")[0])
+        with bc3:
+            st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+            st.metric("Entries added", len(st.session_state.get("batch_entries", [])))
+
+        st.markdown("---")
+        col_input, col_list = st.columns([1, 1])
+
+        # ── Left: paste & add ────────────────────────────────────────────────
+        with col_input:
+            st.markdown("**Paste Moodle entry (2 lines):**")
+            entry_text = st.text_area(
+                "entry",
+                height=130,
+                key="batch_entry_text",
+                label_visibility="collapsed",
+                placeholder="[APELLIDOS NOMBRES](https://eidiomas.espam...)\nBCBABBBABCBCAAABCBCCACCCABACAB"
+            )
+            btn_add, btn_clear = st.columns(2)
+            with btn_add:
+                add_clicked = st.button("➕ Add Entry", type="primary", use_container_width=True)
+            with btn_clear:
+                if st.button("🗑 Clear All", use_container_width=True):
+                    st.session_state.batch_entries = []
+                    st.rerun()
+
+            if add_clicked:
+                if not batch_key:
+                    st.error("Set an answer key first.")
+                elif not entry_text.strip():
+                    st.error("Paste an entry first.")
+                else:
+                    name, answers = parse_batch_entry(entry_text)
+                    if not name:
+                        st.error("Could not parse name from entry.")
+                    else:
+                        key_letters = extract_letters(batch_key)
+                        result      = grade_batch_student(key_letters, answers, b_scale)
+                        if "batch_entries" not in st.session_state:
+                            st.session_state.batch_entries = []
+                        existing_names = [e["name"] for e in st.session_state.batch_entries]
+                        if name in existing_names:
+                            st.warning(f"⚠ '{name}' is already in the batch.")
+                        else:
+                            st.session_state.batch_entries.append({
+                                "name":    name,
+                                "answers": answers,
+                                "result":  result,
+                            })
+                            st.success(f"✓ {name}  →  {result['nota']}")
+                            st.rerun()
+
+        # ── Right: running list + download ───────────────────────────────────
+        with col_list:
+            entries = st.session_state.get("batch_entries", [])
+            if entries:
+                # Detect duplicates for preview table
+                answer_map_preview = {}
+                for e in entries:
+                    answer_map_preview.setdefault(e["answers"], []).append(e["name"])
+
+                rows = []
+                for e in entries:
+                    dup = len(answer_map_preview.get(e["answers"], [])) > 1
+                    rows.append({
+                        "NAME":    e["name"],
+                        "CORRECT": e["result"]["correct"],
+                        "NOTA":    e["result"]["nota"],
+                        "⚠":      "⚠" if dup else "",
+                    })
+
+                st.markdown(f"**Batch preview ({len(entries)} entries):**")
+                st.dataframe(
+                    pd.DataFrame(rows),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=220
+                )
+
+                if batch_key:
+                    key_letters  = extract_letters(batch_key)
+                    excel_bytes  = build_batch_excel(entries, len(key_letters), b_scale)
+                    filename     = f"Calificaciones_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+                    st.download_button(
+                        label="📥 Download Excel",
+                        data=excel_bytes,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                        type="primary"
+                    )
+                else:
+                    st.warning("Set the answer key above to enable Excel export.")
+            else:
+                st.info("No entries yet. Paste and add entries on the left.")
+
+    # Footer
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #6b7280; font-size: 13px; padding: 16px 0;">
