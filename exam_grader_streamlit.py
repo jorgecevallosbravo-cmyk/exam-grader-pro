@@ -107,15 +107,16 @@ def grade_exam(answer_key, student_answer, grading_scale):
 # ============================================================================
 
 def parse_batch_entry(raw_text):
-    """Parse a 2-line Moodle entry: line 1 = name (markdown or plain), line 2 = answers."""
+    """Parse entry: line 1 = name (any format), remaining lines = answers.
+    Handles: single string, vertical list, spaced, numbered, comma-separated."""
     lines = [l.strip() for l in raw_text.strip().splitlines() if l.strip()]
     if len(lines) < 1:
         return None, None
-    name_line  = lines[0]
-    answer_line = lines[1] if len(lines) >= 2 else ""
+    name_line = lines[0]
     md_match = re.match(r'\[([^\]]+)\]', name_line)
     name = md_match.group(1).strip().upper() if md_match else name_line.strip().upper()
-    answers = extract_letters(answer_line) if answer_line else ""
+    answer_raw = " ".join(lines[1:]) if len(lines) >= 2 else ""
+    answers = extract_letters(answer_raw)
     return name, answers
 
 
